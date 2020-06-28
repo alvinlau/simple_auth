@@ -2,13 +2,13 @@ class Api::UserController < ActionController::API
   def create
     username = params[:username]
     unless validate_username
-      reender json: {error: 'username must be alphanumeric'} and return
+      reender json: {error: 'username must be alphanumeric'}, status: 400 and return
     end
 
     begin
       json_body = JSON.parse(request.body.read, symbolize_names: true)
     rescue
-      render json: {error: 'malformed body'} and return
+      render json: {error: 'malformed body'}, status: 400 and return
     end
 
     redis = Redis.new
@@ -16,18 +16,19 @@ class Api::UserController < ActionController::API
     existing_user = redis.get(key)
 
     if existing_user
-      render json: {error: "username #{username} already exists"} and return
+      error = "username #{username} already exists"
+      render json: {error: error }, status: 403 and return
     end
 
     unless json_body[:passwd]
-      render json: {error: 'no password provided'} and return
+      render json: {error: 'no password provided'}, status: 400 and return
     end
 
     pw_hash = BCrypt::Password.create(json_body[:passwd])
     # validate_password(pw_hash)
     redis.set(key, pw_hash, {nx: true})
     
-    render json: {username: username, body: json_body}
+    render json: {username: username, body: json_body}, status: 200
   end
 
 

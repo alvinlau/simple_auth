@@ -6,7 +6,7 @@ class Api::AuthController < ActionController::API
     begin
       json_body = JSON.parse(request.body.read, symbolize_names: true)
     rescue
-      render json: {error: 'malformed body'} and return
+      render json: {error: 'malformed body'}, status: 400 and return
     end
 
     redis = Redis.new
@@ -15,7 +15,8 @@ class Api::AuthController < ActionController::API
 
     unless stored_pw_hash
       # don't give away whether the user exists or not
-      render json: {error: "problem logging in, check username or password?"} and return
+      error = "problem logging in, check username or password?"
+      render json: {error: error}, status: 400 and return
     end
 
     match = (stored_pw_hash == BCrypt::Password.new json_body[:passwd])
@@ -45,12 +46,12 @@ class Api::AuthController < ActionController::API
     given_token = json_body[:token]
 
     unless given_token && stored_token
-      render json: {msg: 'user is not logged in'} and return
+      render json: {msg: 'user is not logged in'}, status: 401 and return
     end
 
     if given_token == stored_token
       redis.del(token_key)
-      render json: {msg: 'logged out successfully'}
+      render json: {msg: 'logged out successfully'}, status: 200
     end
   end
 end
