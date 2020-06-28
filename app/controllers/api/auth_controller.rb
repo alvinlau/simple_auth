@@ -1,6 +1,4 @@
 class Api::AuthController < ActionController::API
-  # It should respond with 200 OK messages for correct requests, 
-  # and 401 for failing authentication requests.
   def create
     username = params[:username]
     # track num attempts?
@@ -31,9 +29,9 @@ class Api::AuthController < ActionController::API
       # make the ttl a config setting
       redis.set(token_key, token, {ex: 600})
 
-      render json: {username: username, token: token}
+      render json: {username: username, token: token}, status: 200
     else
-      render json: {error: 'password does not match'}
+      render json: {error: 'password does not match'}, status: 401
     end
   end
 
