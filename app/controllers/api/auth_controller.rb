@@ -1,20 +1,36 @@
 class Api::AuthController < ActionController::API
-
   # It should respond with 200 OK messages for correct requests, 
   # and 401 for failing authentication requests.
-  # It should do proper error checking, with error responses in a JSON response body.
   def create
     username = params[:username]
     # track num attempts?
 
-    pw_hash = redis = Redis.new
+    begin
+      json_body = JSON.parse(request.body.read, symbolize_names: true)
+    rescue
+      render json: {error: 'malformed body'} and return
+    end
 
-    json_body = JSON.parse(request.body.read, symbolize_names: false)
+    redis = Redis.new
+    pw_key = "pw-#{username}"
+    stored_pw_hash = redis.get(pw_key)
 
-    match = (pw_hash == BCrypt::Password.new json_body[:passwd])
+    unless stored_pw_hash
+      # don't give away whether the user exists or not
+      render json: {error: "problem logging in, check username or password?"} and return
+    end
+
+    match = (stored_pw_hash == BCrypt::Password.new json_body[:passwd])
 
     if match
-      token = nil
+      require 'securerandom'
+      token = SecureRandom.hex
+      token_key = "token-#{username}"
+      redis.get(token_key)
+
+      # make the ttl a config setting
+      redis.set(token_key, token, {ex: 600})
+
       render json: {username: username, token: token}
     else
       render json: {error: 'password does not match'}
@@ -23,12 +39,20 @@ class Api::AuthController < ActionController::API
 
 
   # logout
-  # require token
   def delete
     redis = Redis.new
-
-    redis.get(nil)
+    token_key = "token-#{username}"
+    stored_token = redis.get(token_key)
 
     given_token = json_body[:token]
+
+    unless given_token && stored_token
+      render json: {msg: 'user is not logged in'} and return
+    end
+
+    if given_token == stored_token
+      redis.del(token_key)
+      render json: {msg: 'logged out successfully'}
+    end
   end
 end
