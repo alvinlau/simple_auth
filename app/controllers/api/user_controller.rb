@@ -1,23 +1,47 @@
 class Api::UserController < ActionController::API
-  # ensure username unique
   # pass a basic security audit (e.g. password complexity).
   def create
+    username = params[:username]
+    begin
+      json_body = JSON.parse(request.body.read, symbolize_names: false)
+      # throw if no pw field
+    rescue
+      render json: {error: 'malformed body'} and return
+    end
+
     redis = Redis.new
-    redis.set('testuser', 'newpw')
-    # puts request.body.read
-    json_body = JSON.parse(request.body.read, symbolize_names: false)
-    render json: {username: 'testuser', body: json_body}
+    existing_user = redis.get(username)
+
+    if existing_user
+      render json: {error: "username #{username} already exists"} and return
+    end
+
+    pw_hash = BCrypt::Password.create(json_body[:passwd])
+    redis.set(username, pw_hash)
+    
+    render json: {username: username, body: json_body}
   end
 
+
+  # require token
   def update
+    username = params[:username]
     redis = Redis.new
-    redis.set('testuser', 'testpw')    
+    redis.set('testuser', 'testpw')
   end
+
 
   def show
+    username = params[:username]
     redis = Redis.new
-    data = redis.get('testuser')
+    data = redis.get(username)
+    render json: {username: username, data: data}
+  end
 
-    render json: {username: 'testuser', data: data}
+
+  private 
+  
+  def validate_pw(pw)
+
   end
 end
