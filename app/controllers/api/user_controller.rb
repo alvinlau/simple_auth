@@ -28,7 +28,7 @@ class Api::UserController < ActionController::API
     # validate_password(pw_hash)
     redis.set(key, pw_hash, {nx: true})
     
-    render json: {username: username, body: json_body}, status: 200
+    render json: {msg: "user #{username} created successfully"}, status: 200
   end
 
 
@@ -43,20 +43,36 @@ class Api::UserController < ActionController::API
     end
 
     redis = Redis.new
-    key = "passwd-#{username}"
-    existing_user = redis.get(key)
+    pw_key = "passwd-#{username}"
+    stored_pw_hash = redis.get(pw_key)
 
-    unless existing_user
-      error = "username #{username} does not exist"
-      render json: {error: error }, status: 400 and return
+    unless stored_pw_hash
+      # don't give away whether the user exists or not
+      error = "problem logging in, check username or password?"
+      render json: {error: error}, status: 400 and return
+    end
+
+    token_key = "token-#{username}"
+    stored_token = redis.get(token_key)
+    given_token = json_body[:token]
+
+    unless given_token && stored_token
+      render json: {msg: 'user is not logged in'}, status: 401 and return
     end
     
     unless json_body[:passwd]
       render json: {error: 'no password provided'} and return
     end
 
-    pw_hash = BCrypt::Password.create(json_body[:passwd])
-    redis.set(key, pw_hash, {xx: true})
+    match = (BCrypt::Password.new(stored_pw_hash) == json_body[:passwd])
+
+    if match
+      new_pw_hash = BCrypt::Password.create(json_body[:passwd])
+      redis.set(key, new_pw_hash, {xx: true})
+      render json: {msg: "password updated successfully"}, status: 200
+    else
+      render json: {error: 'password does not match'}, status: 401
+    end
   end
 
 
