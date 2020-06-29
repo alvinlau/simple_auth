@@ -53,7 +53,7 @@ module Api
 
       unless stored_pw_hash
         # don't give away whether the user exists or not
-        error = "problem logging in, check username or password?"
+        error = "problem updating password, check username or password?"
         render json: {error: error}, status: 400 and return
       end
 
@@ -62,24 +62,25 @@ module Api
       given_token = json_body[:token]
 
       unless given_token && stored_token
-        render json: {msg: 'user is not logged in'}, status: 401 and return
+        render json: {error: 'user is not logged in'}, status: 401 and return
       end
       
       unless json_body[:passwd]
         render json: {error: 'no password provided'} and return
       end
 
-      match = (BCrypt::Password.new(stored_pw_hash) == json_body[:passwd])
+      # optional: require user to provide old password as well
 
-      if match
+      if stored_token == given_token
         new_pw_hash = BCrypt::Password.create(json_body[:passwd])
         redis.set(pw_key, new_pw_hash, {xx: true})
         render json: {msg: "password updated successfully"}, status: 200
       else
-        render json: {error: 'password does not match'}, status: 401
+        render json: {error: 'token is invalid'}, status: 401
       end
     end
 
+    private 
 
     def show
       username = params[:username]
@@ -88,9 +89,6 @@ module Api
       pw_hash = redis.get(key)
       render json: {username: username, pw_hash: pw_hash}
     end
-
-
-    private 
 
     def validate_username(username)
       username =~ /^[a-zA-Z0-9]+$/

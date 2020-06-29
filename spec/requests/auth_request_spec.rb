@@ -54,15 +54,15 @@ RSpec.describe "AuthController", type: :request do
       expect(body['token']).to be nil
     end
   end
+  
 
   describe 'logout' do
     it 'completes logout for user with valid token' do
       post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json      
+      delete '/api/auth/pika', params: {token: JSON.parse(response.body)['token']}.to_json
       body = JSON.parse(response.body)
-      
-      delete '/api/auth/pika', params: {token: body['token']}.to_json
-      body = JSON.parse(response.body)
+
       expect(response).to have_http_status(200)
       expect(body['msg']).to eq 'logged out successfully'
       redis = Redis.new

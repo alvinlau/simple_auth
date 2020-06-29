@@ -68,27 +68,85 @@ RSpec.describe "UserController", type: :request do
       expect(JSON.parse(response.body)['error']).to eq 'no password provided'
     end
   end
+  
 
   describe 'update password' do
     it 'updates password with valid token' do
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
+      token = JSON.parse(response.body)['token']
+      patch '/api/users/pika', params: {passwd: 'newpw=01', token: token}.to_json
 
+      expect(response).to have_http_status(200)
+      expect(JSON.parse(response.body)['msg']).to eq 'password updated successfully'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'newpw=01'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).not_to eq 'chuchu+0'
     end
 
-    it 'does not do anything for non-existing user' do
-      # no user is created
+    it 'does not change anything for non-existing user' do
+      patch '/api/users/nosuchuser', params: {passwd: 'somepw', token: 'randomtoken'}.to_json
+      expect(response).to have_http_status(400)
+      expect(Redis.new.get('passwd-nosuchuser')).to be nil
     end
 
     it 'rejects attempt to change password without valid token' do
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
+      patch '/api/users/pika', params: {passwd: 'newpw=01', token: 'invalidtoken'}.to_json
 
+      expect(response).to have_http_status(401)
+      expect(JSON.parse(response.body)['error']).to eq 'token is invalid'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'chuchu+0'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).not_to eq 'newpw=01'
+    end
+
+    it 'cannot change password without being logged in' do
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      patch '/api/users/pika', params: {passwd: 'newpw=01', token: 'invalidtoken'}.to_json
+
+      expect(response).to have_http_status(401)
+      expect(JSON.parse(response.body)['error']).to eq 'user is not logged in'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'chuchu+0'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).not_to eq 'newpw=01'
     end
 
     it 'changing password will NOT invalidate existing login auth token' do
-      # user can still logout
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
+      token = JSON.parse(response.body)['token']
 
+      patch '/api/users/pika', params: {passwd: 'newpw=01', token: token}.to_json
+      redis = Redis.new
+      expect(redis.get('token-pika')).not_to be nil
+
+      delete '/api/auth/pika', params: {token: token}.to_json
+      body = JSON.parse(response.body)
+
+      expect(response).to have_http_status(200)
+      expect(body['msg']).to eq 'logged out successfully'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'newpw=01'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).not_to eq 'chuchu+0'
+      expect(redis.get('token-pika')).to be nil
     end
 
-    it 'should allow changing password again after changing once already while logged in' do
+    it 'should allow changing password again after changing it once already while logged in' do
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
+      token = JSON.parse(response.body)['token']
 
+      patch '/api/users/pika', params: {passwd: 'newpw=01', token: token}.to_json
+      redis = Redis.new
+      expect(redis.get('token-pika')).not_to be nil
+
+      patch '/api/users/pika', params: {passwd: 'newpw=02', token: token}.to_json
+      redis = Redis.new
+      expect(redis.get('token-pika')).not_to be nil
+
+      expect(response).to have_http_status(200)
+      expect(JSON.parse(response.body)['msg']).to eq 'password updated successfully'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'newpw=02'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).not_to eq 'newpw=01'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).not_to eq 'chuchu+0'
     end
 
   end

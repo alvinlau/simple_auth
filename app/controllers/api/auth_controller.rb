@@ -70,6 +70,7 @@ class Api::AuthController < ActionController::API
     end
   end
 
+  private
 
   def show
     username = params[:username]
