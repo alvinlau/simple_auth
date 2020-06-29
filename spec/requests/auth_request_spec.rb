@@ -7,8 +7,8 @@ RSpec.describe "AuthController", type: :request do
 
   describe 'login' do
     it 'generates token for valid username and password' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       expect(response).to have_http_status(200)
       
       body = JSON.parse(response.body)
@@ -27,7 +27,7 @@ RSpec.describe "AuthController", type: :request do
     end
 
     it 'does not accept incorrect password for existing user' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
       post '/api/auth/pika', params: {passwd: 'wrongpw'}.to_json
       expect(response).to have_http_status(401)
       body = JSON.parse(response.body)
@@ -35,9 +35,9 @@ RSpec.describe "AuthController", type: :request do
     end
 
     it 'handles user that is already logged in' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       expect(response).to have_http_status(200)
       
       body = JSON.parse(response.body)
@@ -57,8 +57,8 @@ RSpec.describe "AuthController", type: :request do
 
   describe 'logout' do
     it 'completes logout for user with valid token' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       body = JSON.parse(response.body)
       
       delete '/api/auth/pika', params: {token: body['token']}.to_json
@@ -72,8 +72,8 @@ RSpec.describe "AuthController", type: :request do
     end
 
     it 'rejects logout request with invalid token' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       
       delete '/api/auth/pika', params: {token: 'invalidtoken'}.to_json
       body = JSON.parse(response.body)
@@ -84,8 +84,8 @@ RSpec.describe "AuthController", type: :request do
     end
 
     it 'rejects logout request with no token' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       body = JSON.parse(response.body)
       
       delete '/api/auth/pika', params: {}.to_json
@@ -96,8 +96,8 @@ RSpec.describe "AuthController", type: :request do
     end
 
     it 'handles attempt to logout again after successful logout' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       body = JSON.parse(response.body)
       
       delete '/api/auth/pika', params: {token: body['token']}.to_json
@@ -111,14 +111,14 @@ RSpec.describe "AuthController", type: :request do
     end
 
     it 'can perform login again after logout' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       body = JSON.parse(response.body)
       token1 = body['token']
       
       delete '/api/auth/pika', params: {token: token1}.to_json
 
-      post '/api/auth/pika', params: {passwd: 'chu'}.to_json
+      post '/api/auth/pika', params: {passwd: 'chuchu+0'}.to_json
       body = JSON.parse(response.body)
       token2 = body['token']
 

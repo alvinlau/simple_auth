@@ -25,11 +25,15 @@ module Api
         render json: {error: 'no password provided'}, status: 400 and return
       end
 
-      pw_hash = BCrypt::Password.create(json_body[:passwd])
-      # validate_password(pw_hash)
-      redis.set(key, pw_hash, {nx: true})
-      
-      render json: {msg: "user #{username} created successfully"}, status: 200
+      if validate_password(json_body[:passwd])
+        pw_hash = BCrypt::Password.create(json_body[:passwd])
+        redis.set(key, pw_hash, {nx: true})
+        render json: {msg: "user #{username} created successfully"}, status: 200
+      else
+        error = 'password must have at least one letter, one number, one special character, '\
+                'and at least 8 characters long'
+        render json: {error: error}, status: 400 and return
+      end
     end
 
 
@@ -69,7 +73,7 @@ module Api
 
       if match
         new_pw_hash = BCrypt::Password.create(json_body[:passwd])
-        redis.set(key, new_pw_hash, {xx: true})
+        redis.set(pw_key, new_pw_hash, {xx: true})
         render json: {msg: "password updated successfully"}, status: 200
       else
         render json: {error: 'password does not match'}, status: 401

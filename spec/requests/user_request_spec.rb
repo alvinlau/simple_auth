@@ -7,18 +7,46 @@ RSpec.describe "UserController", type: :request do
 
   describe 'create user' do
     it 'accepts valid username and password' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
       expect(response).to have_http_status(200)
       expect(JSON.parse(response.body)['msg']).to eq 'user pika created successfully'
-      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'chu'
+      expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'chuchu+0'
     end
 
-    it 'requires alphanumeric characters for username' do
-
+    it 'requires alphanumeric characters only for username' do
+      post '/api/users/pika-67&', params: {passwd: 'chuchu+0'}.to_json
+      expect(response).to have_http_status(400)
+      expect(JSON.parse(response.body)['error']).to eq 'username must be alphanumeric'
+      expect(Redis.new.get('passwd-pika')).to be nil
     end
 
-    it 'require password matching password rules' do
+    it 'requires password matching password rules' do
+      error = 'password must have at least one letter, one number, one special character, '\
+                'and at least 8 characters long'
+      redis = Redis.new
 
+      post '/api/users/pika', params: {passwd: 'chuchuchu'}.to_json
+      expect(response).to have_http_status(400)
+      expect(JSON.parse(response.body)['error']).to eq error
+      expect(redis.get('passwd-pika')).to be nil
+
+      post '/api/users/pika', params: {passwd: 'chuchu00'}.to_json
+      expect(response).to have_http_status(400)
+      expect(JSON.parse(response.body)['error']).to eq error
+
+      post '/api/users/pika', params: {passwd: 'short'}.to_json
+      expect(response).to have_http_status(400)
+      expect(JSON.parse(response.body)['error']).to eq error
+
+      post '/api/users/pika', params: {passwd: '12345678'}.to_json
+      expect(response).to have_http_status(400)
+      expect(JSON.parse(response.body)['error']).to eq error
+
+      post '/api/users/pika', params: {passwd: '!!!'}.to_json
+      expect(response).to have_http_status(400)
+      expect(JSON.parse(response.body)['error']).to eq error
+
+      expect(redis.get('passwd-pika')).to be nil
     end
 
     it 'does not accept malformed json body' do
@@ -28,8 +56,8 @@ RSpec.describe "UserController", type: :request do
     end
 
     it 'does not allow creating user with existing username' do
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
-      post '/api/users/pika', params: {passwd: 'chu'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
+      post '/api/users/pika', params: {passwd: 'chuchu+0'}.to_json
       expect(response).to have_http_status(403)
       expect(JSON.parse(response.body)['error']).to eq 'username pika already exists'
     end
@@ -54,7 +82,12 @@ RSpec.describe "UserController", type: :request do
 
     end
 
-    it 'changing password will invalidate existing login auth tokens' do
+    it 'changing password will NOT invalidate existing login auth token' do
+      # user can still logout
+
+    end
+
+    it 'should allow changing password again after changing once already while logged in' do
 
     end
 
