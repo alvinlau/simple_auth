@@ -1,8 +1,8 @@
 class Api::UserController < ActionController::API
   def create
     username = params[:username]
-    unless validate_username
-      reender json: {error: 'username must be alphanumeric'}, status: 400 and return
+    unless validate_username username
+      render json: {error: 'username must be alphanumeric'}, status: 400 and return
     end
 
     begin
@@ -12,7 +12,7 @@ class Api::UserController < ActionController::API
     end
 
     redis = Redis.new
-    key = "pw-#{username}"
+    key = "passwd-#{username}"
     existing_user = redis.get(key)
 
     if existing_user
@@ -41,6 +41,15 @@ class Api::UserController < ActionController::API
     rescue
       render json: {error: 'malformed body'} and return
     end
+
+    redis = Redis.new
+    key = "passwd-#{username}"
+    existing_user = redis.get(key)
+
+    unless existing_user
+      error = "username #{username} does not exist"
+      render json: {error: error }, status: 400 and return
+    end
     
     unless json_body[:passwd]
       render json: {error: 'no password provided'} and return
@@ -54,7 +63,7 @@ class Api::UserController < ActionController::API
   def show
     username = params[:username]
     redis = Redis.new
-    key = "pw-#{username}"
+    key = "passwd-#{username}"
     data = redis.get(key)
     render json: {username: username, data: data}
   end

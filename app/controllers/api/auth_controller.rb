@@ -10,7 +10,7 @@ class Api::AuthController < ActionController::API
     end
 
     redis = Redis.new
-    pw_key = "pw-#{username}"
+    pw_key = "passwd-#{username}"
     stored_pw_hash = redis.get(pw_key)
 
     unless stored_pw_hash
@@ -19,17 +19,21 @@ class Api::AuthController < ActionController::API
       render json: {error: error}, status: 400 and return
     end
 
-    match = (stored_pw_hash == BCrypt::Password.new json_body[:passwd])
+    puts json_body[:passwd]
+    match = (BCrypt::Password.new(stored_pw_hash) == json_body[:passwd])
+    puts 'match' if match
 
     if match
       require 'securerandom'
       token = SecureRandom.hex
       token_key = "token-#{username}"
-      redis.get(token_key)
+      
+      if redis.get(token_key) 
+        # allow multiple tokens?
+      end
 
       # make the ttl a config setting
       redis.set(token_key, token, {ex: 600})
-
       render json: {username: username, token: token}, status: 200
     else
       render json: {error: 'password does not match'}, status: 401
@@ -39,6 +43,8 @@ class Api::AuthController < ActionController::API
 
   # logout
   def delete
+    username = params[:username]
+
     redis = Redis.new
     token_key = "token-#{username}"
     stored_token = redis.get(token_key)
@@ -52,6 +58,9 @@ class Api::AuthController < ActionController::API
     if given_token == stored_token
       redis.del(token_key)
       render json: {msg: 'logged out successfully'}, status: 200
+    else
+      # might be attempt to log someone else out
+      render json: {msg: 'invalid token'}, status: 401
     end
   end
 end
