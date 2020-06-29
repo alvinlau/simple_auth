@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "Users", type: :request do
+RSpec.describe "UserController", type: :request do
   before(:each) do
     Redis.new.flushall
   end
@@ -31,5 +31,9 @@ RSpec.describe "Users", type: :request do
       expect(response).to have_http_status(400)
       expect(JSON.parse(response.body)['error']).to eq 'no password provided'
     end
+  end
+
+  describe 'update password' do
+
   end
 end

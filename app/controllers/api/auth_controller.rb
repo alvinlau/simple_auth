@@ -22,17 +22,20 @@ class Api::AuthController < ActionController::API
     match = (BCrypt::Password.new(stored_pw_hash) == json_body[:passwd])
 
     if match
-      require 'securerandom'
-      token = SecureRandom.hex
       token_key = "token-#{username}"
-      
-      if redis.get(token_key) 
-        # allow multiple tokens?
+      existing_token = redis.get(token_key) 
+      if existing_token
+        # give back currently logged in token for now so if the user is logged in
+        # on another device already, that device is still logged in
+        # future: allow multiple tokens for concurrent login?
+        render json: {msg: 'logged in successfully', token: existing_token}, status: 200
+      else
+        require 'securerandom'
+        new_token = SecureRandom.hex
+        # make the ttl a config setting
+        redis.set(token_key, new_token, {ex: 600})
+        render json: {msg: 'logged in successfully', token: new_token}, status: 200
       end
-
-      # make the ttl a config setting
-      redis.set(token_key, token, {ex: 600})
-      render json: {username: username, token: token}, status: 200
     else
       render json: {error: 'password does not match'}, status: 401
     end
