@@ -1,5 +1,8 @@
 module Api
   class Api::UserController < ActionController::API
+
+    # creates user and password
+    # stores the password hash
     def create
       username = params[:username]
       unless validate_username username
@@ -37,7 +40,7 @@ module Api
     end
 
 
-    # require token
+    # updates password
     def update
       username = params[:username]
       
@@ -69,7 +72,7 @@ module Api
         render json: {error: 'no password provided'} and return
       end
 
-      # optional: require user to provide old password as well
+      # future/optional: require user to provide old password as well
 
       if stored_token == given_token
         new_pw_hash = BCrypt::Password.create(json_body[:passwd])

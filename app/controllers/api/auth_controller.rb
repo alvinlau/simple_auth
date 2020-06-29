@@ -1,7 +1,9 @@
 class Api::AuthController < ActionController::API
+
+  # login
+  # returns an auth token
   def create
     username = params[:username]
-    # track num attempts?
 
     begin
       json_body = JSON.parse(request.body.read, symbolize_names: true)
@@ -28,11 +30,14 @@ class Api::AuthController < ActionController::API
         # give back currently logged in token for now so if the user is logged in
         # on another device already, that device is still logged in
         # future: allow multiple tokens for concurrent login?
+
+        # renew the ttl for the existing token
+        redis.set(token_key, existing_token, {ex: 600})
         render json: {msg: 'logged in successfully', token: existing_token}, status: 200
       else
         require 'securerandom'
         new_token = SecureRandom.hex
-        # make the ttl a config setting
+
         redis.set(token_key, new_token, {ex: 600})
         render json: {msg: 'logged in successfully', token: new_token}, status: 200
       end
@@ -43,6 +48,7 @@ class Api::AuthController < ActionController::API
 
 
   # logout
+  # requires auth token from login
   def delete
     username = params[:username]
 
