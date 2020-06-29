@@ -66,7 +66,7 @@ class Api::AuthController < ActionController::API
       render json: {msg: 'logged out successfully'}, status: 200
     else
       # might be attempt to log someone else out
-      render json: {msg: 'invalid token'}, status: 401
+      render json: {error: 'invalid token'}, status: 401
     end
   end
 

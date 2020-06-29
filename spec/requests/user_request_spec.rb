@@ -13,6 +13,14 @@ RSpec.describe "UserController", type: :request do
       expect(BCrypt::Password.new(Redis.new.get('passwd-pika'))).to eq 'chu'
     end
 
+    it 'requires alphanumeric characters for username' do
+
+    end
+
+    it 'require password matching password rules' do
+
+    end
+
     it 'does not accept malformed json body' do
       post '/api/users/junk', params: {a: 10}
       expect(response).to have_http_status(400)
@@ -34,6 +42,21 @@ RSpec.describe "UserController", type: :request do
   end
 
   describe 'update password' do
+    it 'updates password with valid token' do
+
+    end
+
+    it 'does not do anything for non-existing user' do
+      # no user is created
+    end
+
+    it 'rejects attempt to change password without valid token' do
+
+    end
+
+    it 'changing password will invalidate existing login auth tokens' do
+
+    end
 
   end
 end
