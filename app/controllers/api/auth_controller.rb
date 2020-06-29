@@ -19,9 +19,7 @@ class Api::AuthController < ActionController::API
       render json: {error: error}, status: 400 and return
     end
 
-    puts json_body[:passwd]
     match = (BCrypt::Password.new(stored_pw_hash) == json_body[:passwd])
-    puts 'match' if match
 
     if match
       require 'securerandom'
@@ -45,10 +43,15 @@ class Api::AuthController < ActionController::API
   def delete
     username = params[:username]
 
+    begin
+      json_body = JSON.parse(request.body.read, symbolize_names: true)
+    rescue
+      render json: {error: 'malformed body'}, status: 400 and return
+    end
+
     redis = Redis.new
     token_key = "token-#{username}"
     stored_token = redis.get(token_key)
-
     given_token = json_body[:token]
 
     unless given_token && stored_token
@@ -62,5 +65,14 @@ class Api::AuthController < ActionController::API
       # might be attempt to log someone else out
       render json: {msg: 'invalid token'}, status: 401
     end
+  end
+
+
+  def show
+    username = params[:username]
+    redis = Redis.new
+    key = "token-#{username}"
+    token = redis.get(key)
+    render json: {username: username, token: token}
   end
 end

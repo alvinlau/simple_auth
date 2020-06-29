@@ -64,8 +64,8 @@ class Api::UserController < ActionController::API
     username = params[:username]
     redis = Redis.new
     key = "passwd-#{username}"
-    data = redis.get(key)
-    render json: {username: username, data: data}
+    pw_hash = redis.get(key)
+    render json: {username: username, pw_hash: pw_hash}
   end
 
 
