@@ -39,7 +39,7 @@ How to run the test suite
 
 ## Future Improvements
 
-  - Handle multiple concurrent logins for one user: this is will mean storing an array in Redis for a user's auth tokens
+  - Handle multiple concurrent logins for one user: this will mean storing an array in Redis for a user's auth tokens
   - Handle multiple failed login attempts (I think Rails)
   - Logging
   - Just set the username and password hash in Redis when creating new users in RSpec, it saves one call to the service
