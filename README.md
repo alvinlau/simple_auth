@@ -8,7 +8,7 @@ The API should be able to create a new login with a username and password, ensur
 
 ## Quick Notes
 
-The core skeleton is generated as a Rails API project via `rails new simple_auth --api --skip-active-record --skip-test`, since we're not outright using a database to store the model objects.
+The core skeleton is generated as a Rails API project via `rails new simple_auth --api --skip-active-record --skip-test`, and since we're not outright using a database to store the data I started without ActiveRecord.
 
 I have taken a rudimentary approach to implementing this service.  It is possible to incorporate more robust gems and libraries including `pundit`, `devise`, `jwt`, `fast_jsonapi`, but with the scope of this project, I took the simpler approach to have fewer lines of code and the ability to see the business logic clearly.  This rudimentay approach includes simply using `BCrypt` to hash the passwords, and using `SecureRandom` to generate tokens.  Surely there are more robust gems to do the same thing, and as of now it is easy to replace the implementation using those other gems.
 
